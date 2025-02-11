@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF to Flipbook Converter</title>
 
-    <!-- Bootstrap CSS -->
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- DFlip CSS -->
  
     <style>
         body {
@@ -44,10 +43,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
+<script defer src="https://jainam777-dev.github.io/secure_key/config.js"></script>
     <script>
-        const SUPABASE_URL = "https://kqyepikiddlbgeulfcyt.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxeWVwaWtpZGRsYmdldWxmY3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkyNjkxMzQsImV4cCI6MjA1NDg0NTEzNH0.Ky9ZctGLfvKDS-HvS9qm4Cqdbf33w2QPyE6px515RPs";
         
         const fileInput = document.getElementById("fileInput");
         const uploadBtn = document.getElementById("uploadBtn");
@@ -55,42 +52,68 @@
         const message = document.getElementById("message");
      
 
-        async function uploadFile() {
-            const file = fileInput.files[0];
-            if (!file) {
-                showMessage("Please select a PDF file.", "danger");
-                return;
+        async function checkIfFileExists(fileName) {
+        const response = await fetch(`${SUPABASE_URL}/storage/v1/object/public/pdfs/${fileName}`, {
+            method: "HEAD",
+            headers: {
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
             }
+        });
 
-            loading.classList.remove("d-none");
-            message.classList.add("d-none");
+        return response.ok; 
+    }
 
-            const formData = new FormData();
-            formData.append("file", file);
+    async function uploadFile() {
+        const file = fileInput.files[0];
+        if (!file) {
+            showMessage("Please select a PDF file.", "danger");
+            return;
+        }
 
-            const response = await fetch(`${SUPABASE_URL}/storage/v1/object/pdfs/${file.name}`, {
-                method: "POST",
-                headers: {
-                    "apikey": SUPABASE_ANON_KEY,
-                    "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-                },
-                body: file
-            });
+        loading.classList.remove("d-none");
+        message.classList.add("d-none");
 
-            if (!response.ok) {
-                showMessage("Upload failed! Please try again.", "danger");
-                loading.classList.add("d-none");
-                return;
-            }
+        const fileName = file.name;
+        const fileExists = await checkIfFileExists(fileName);
 
-            const pdfUrl = `${SUPABASE_URL}/storage/v1/object/public/pdfs/${file.name}`;
-            showMessage("PDF uploaded successfully!", "success");
+        if (fileExists) {
+       
+            const pdfUrl = `${SUPABASE_URL}/storage/v1/object/public/pdfs/${fileName}`;
+            showMessage("File already exists. Redirecting...", "info");
 
-          
             setTimeout(() => {
+                window.location.href = `flipbook.html?pdf=${encodeURIComponent(pdfUrl)}`;
+            }, 1000);
+
+            loading.classList.add("d-none");
+            return;
+        }
+
+        const response = await fetch(`${SUPABASE_URL}/storage/v1/object/pdfs/${fileName}`, {
+            method: "POST",
+            headers: {
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+            },
+            body: file
+        });
+
+        if (!response.ok) {
+            showMessage("Upload failed! Please try again.", "danger");
+            loading.classList.add("d-none");
+            return;
+        }
+
+        const pdfUrl = `${SUPABASE_URL}/storage/v1/object/public/pdfs/${fileName}`;
+        showMessage("PDF uploaded successfully!", "success");
+
+        setTimeout(() => {
             window.location.href = `flipbook.html?pdf=${encodeURIComponent(pdfUrl)}`;
         }, 1000);
-        }
+
+        loading.classList.add("d-none");
+    }
 
         function displayPDF(pdfUrl) {
             pdfContainer.classList.remove("d-none");
