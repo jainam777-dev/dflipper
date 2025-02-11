@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Flipbook Converter</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- DFlip CSS -->
+ 
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin-top: 50px;
+        }
+        .pdf-viewer {
+            height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card shadow p-4 text-center">
+            <h2 class="mb-4">Upload Your PDF</h2>
+            <input type="file" id="fileInput" class="form-control mb-3" accept="application/pdf">
+            <button class="btn btn-primary" id="uploadBtn">Upload</button>
+            <div id="loading" class="mt-3 d-none">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+            <div id="message" class="alert mt-3 d-none"></div>
+        </div>
+
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const SUPABASE_URL = "https://kqyepikiddlbgeulfcyt.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxeWVwaWtpZGRsYmdldWxmY3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkyNjkxMzQsImV4cCI6MjA1NDg0NTEzNH0.Ky9ZctGLfvKDS-HvS9qm4Cqdbf33w2QPyE6px515RPs";
+        
+        const fileInput = document.getElementById("fileInput");
+        const uploadBtn = document.getElementById("uploadBtn");
+        const loading = document.getElementById("loading");
+        const message = document.getElementById("message");
+     
+
+        async function uploadFile() {
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage("Please select a PDF file.", "danger");
+                return;
+            }
+
+            loading.classList.remove("d-none");
+            message.classList.add("d-none");
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch(`${SUPABASE_URL}/storage/v1/object/pdfs/${file.name}`, {
+                method: "POST",
+                headers: {
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+                },
+                body: file
+            });
+
+            if (!response.ok) {
+                showMessage("Upload failed! Please try again.", "danger");
+                loading.classList.add("d-none");
+                return;
+            }
+
+            const pdfUrl = `${SUPABASE_URL}/storage/v1/object/public/pdfs/${file.name}`;
+            showMessage("PDF uploaded successfully!", "success");
+
+          
+            setTimeout(() => {
+            window.location.href = `flipbook.html?pdf=${encodeURIComponent(pdfUrl)}`;
+        }, 1000);
+        }
+
+        function displayPDF(pdfUrl) {
+            pdfContainer.classList.remove("d-none");
+            flipbook.setAttribute("source", pdfUrl);
+        
+        }
+
+        function showMessage(text, type) {
+            message.innerHTML = text;
+            message.className = `alert alert-${type} mt-3`;
+            message.classList.remove("d-none");
+        }
+
+        uploadBtn.addEventListener("click", uploadFile);
+    </script>
+
+</body>
+</html>
